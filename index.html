@@ -106,18 +106,23 @@
                 const file = files[i];
                 const reader = new FileReader();
                 reader.onload = function(e) {
-                    const content = e.target.result;
-                    const parsedData = parseSOSI(content); // Bruker funksjonen fra sosi_parser.js
-                    koordsys = parsedData.koordsys;
-                    const hoydedatum = parsedData.hoydedatum;
+                    try {
+                        const content = e.target.result;
+                        const parsedData = parseSOSI(content); // Bruker funksjonen fra sosi_parser.js
+                        koordsys = parsedData.koordsys;
+                        const hoydedatum = parsedData.hoydedatum;
 
-                    const row = document.createElement('tr');
-                    row.innerHTML = `
-                        <td class="py-2 px-4 border-b border-gray-200">${file.name}</td>
-                        <td class="py-2 px-4 border-b border-gray-200">${koordsys}</td>
-                        <td class="py-2 px-4 border-b border-gray-200">${hoydedatum}</td>
-                    `;
-                    fileDetailsTable.appendChild(row);
+                        const row = document.createElement('tr');
+                        row.innerHTML = `
+                            <td class="py-2 px-4 border-b border-gray-200">${file.name}</td>
+                            <td class="py-2 px-4 border-b border-gray-200">${koordsys}</td>
+                            <td class="py-2 px-4 border-b border-gray-200">${hoydedatum}</td>
+                        `;
+                        fileDetailsTable.appendChild(row);
+                    } catch (error) {
+                        console.error('Error parsing file:', file.name, error);
+                        alert('Det oppstod en feil ved parsing av filen: ' + file.name);
+                    }
                 };
                 reader.readAsText(file);
             }
