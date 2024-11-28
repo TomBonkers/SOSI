@@ -6,6 +6,7 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css"></link>
     <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&display=swap" rel="stylesheet">
+    <script src="sosi_parser.js"></script>
     <style>
         body {
             font-family: 'Roboto', sans-serif;
@@ -73,6 +74,7 @@
         const fileInput = document.getElementById('fileInput');
         const fileDetailsTable = document.getElementById('fileDetailsTable');
         const fileDetailsContainer = document.getElementById('fileDetailsContainer');
+        let koordsys = 'UTM Zone 32N'; // Dette bør erstattes med faktisk sjekk
 
         dropzone.addEventListener('click', () => fileInput.click());
 
@@ -102,17 +104,22 @@
 
             for (let i = 0; i < files.length; i++) {
                 const file = files[i];
-                // Simulerer sjekk av koordinatsystem og høydedatum
-                const koordsys = 'UTM Zone 32N'; // Dette bør erstattes med faktisk sjekk
-                const hoydedatum = 'NN2000'; // Dette bør erstattes med faktisk sjekk
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    const content = e.target.result;
+                    const parsedData = parseSOSI(content); // Bruker funksjonen fra sosi_parser.js
+                    koordsys = parsedData.koordsys;
+                    const hoydedatum = parsedData.hoydedatum;
 
-                const row = document.createElement('tr');
-                row.innerHTML = `
-                    <td class="py-2 px-4 border-b border-gray-200">${file.name}</td>
-                    <td class="py-2 px-4 border-b border-gray-200">${koordsys}</td>
-                    <td class="py-2 px-4 border-b border-gray-200">${hoydedatum}</td>
-                `;
-                fileDetailsTable.appendChild(row);
+                    const row = document.createElement('tr');
+                    row.innerHTML = `
+                        <td class="py-2 px-4 border-b border-gray-200">${file.name}</td>
+                        <td class="py-2 px-4 border-b border-gray-200">${koordsys}</td>
+                        <td class="py-2 px-4 border-b border-gray-200">${hoydedatum}</td>
+                    `;
+                    fileDetailsTable.appendChild(row);
+                };
+                reader.readAsText(file);
             }
 
             fileDetailsContainer.classList.remove('hidden');
@@ -138,18 +145,30 @@
                 if (progress >= 100) {
                     clearInterval(interval);
                     document.getElementById('successMessage').classList.remove('hidden');
-                    generateDXFFile();
+                    generateDXFFile(files);
                 }
             }, 500);
         });
 
-        function generateDXFFile() {
-            const dxfContent = '0\nSECTION\n2\nHEADER\n0\nENDSEC\n0\nSECTION\n2\nTABLES\n0\nENDSEC\n0\nSECTION\n2\nBLOCKS\n0\nENDSEC\n0\nSECTION\n2\nENTITIES\n0\nENDSEC\n0\nSECTION\n2\nOBJECTS\n0\nENDSEC\n0\nEOF';
+        function generateDXFFile(files) {
+            let dxfContent = '0\nSECTION\n2\nHEADER\n0\nENDSEC\n0\nSECTION\n2\nTABLES\n0\nENDSEC\n0\nSECTION\n2\nBLOCKS\n0\nENDSEC\n0\nSECTION\n2\nENTITIES\n';
+            for (let i = 0; i < files.length; i++) {
+                dxfContent += `0\nLINE\n8\n0\n10\n0.0\n20\n0.0\n30\n0.0\n11\n${i * 10}.0\n21\n${i * 10}.0\n31\n0.0\n`;
+            }
+            dxfContent += '0\nENDSEC\n0\nSECTION\n2\nOBJECTS\n0\nENDSEC\n0\nEOF';
             const blob = new Blob([dxfContent], { type: 'application/dxf' });
             const url = URL.createObjectURL(blob);
             const downloadLink = document.getElementById('downloadLink');
+            let fileName = '';
+
+            if (files.length === 1) {
+                fileName = `${koordsys}_${files[0].name.replace('.sos', '.dxf')}`;
+            } else {
+                fileName = `${koordsys}_Converted_SOSI.dxf`;
+            }
+
             downloadLink.href = url;
-            downloadLink.download = 'converted.dxf';
+            downloadLink.download = fileName;
         }
     </script>
 </body>
